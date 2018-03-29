@@ -21,15 +21,16 @@ const settings = {
     currentRate: GM_getValue('rate', 2.5),
     maxRate: 4,
     minRate: 1,
-    step: 0.5
+    step: 0.333
 }
 const icourse163 = {
     selectors: {
         videoDiv: 'div.j-unitctBox.unitctBox.f-pr',
         video: 'video',
-        sbg: 'div.sbg',
-        bbg: 'div.bbg',
-        source: 'video > source',
+        // sbg: 'div.sbg',
+        // bbg: 'div.bbg',
+        // source: 'video > source',
+        qualityList: 'div.controlbar_btn.qualitybtn.j-qualitybtn ul',
         volumnBtn: 'div.controlbar_btn.volumebtn.j-volumebtn',
         rateBtn: 'div.controlbar_btn.ratebtn.j-ratebtn',
         rateTxt: 'span.ratebtn_text.j-ratebtn_text',
@@ -50,7 +51,6 @@ const icourse163 = {
         })
     },
     setRate(rate) {
-        console.log('set');
         const { maxRate, minRate } = settings
         if (rate > maxRate || rate < minRate) rate = minRate
         GM_setValue('rate', rate)
@@ -58,21 +58,23 @@ const icourse163 = {
         this.nodes.video.playbackRate = rate
         this.nodes.rateTxt.innerHTML = 'x' + rate.toFixed(1)
     },
-    initial: true,
+    
     override() {
-        const { currentRate, step } = settings
-        const { video, rateBtn, rateTxt } = this.nodes
-        if (this.initial) {
-            this.setRate(currentRate)
-            this.initial = false
-        }
+        const { video, rateBtn, rateTxt, qualityList } = this.nodes
         rateBtn.removeChild(rateBtn.querySelector('div'))
+        this.setRate(settings.currentRate)
         rateTxt.addEventListener('click', () => {
-            this.setRate(currentRate + step)
+            this.setRate(settings.currentRate + settings.step)
         })
-        video.addEventListener('playing', () => {
-            this.setRate(currentRate)
+        qualityList.addEventListener('click', () => {
+            console.log('click')
+            setTimeout(() => {
+                this.setRate(settings.currentRate)
+            }, 250)
         })
+        // video.addEventListener('playing', () => {
+        //     this.setRate(currentRate)
+        // })
         video.removeAttribute('autoplay')
         video.setAttribute('preload', 'auto')
         video.play()
