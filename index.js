@@ -2,9 +2,11 @@
 // @name         icourse163_enhance
 // @match        https://www.icourse163.org/*
 // @author       bilabila
-// @version      0.0.2
+// @version      0.0.3
 // @grant        GM_getValue
 // @grant        GM_setValue
+// @namespace    https://greasyfork.org/users/164996
+// @description  中国大学mooc增强
 // ==/UserScript==
 /* todos
 - fix play multi video in background bug
@@ -94,7 +96,7 @@ const icourse163 = {
                 if (video.paused) {
                     pauseBtn.click()
                 } else {
-                    //failed using video.pause()    
+                    //failed using video.pause()
                     playBtn.click()
                 }
         })
@@ -121,24 +123,15 @@ const icourse163 = {
         video.play()
     },
     init() {
-        this.nodes = new Proxy(this.nodes, {
-            set: (obj, prop, value) => {
-                if (prop === 'video') {
-                    if (value && value !== obj.oldVideo) {
-                        if (obj.oldVideo) {
-                            obj.oldVideo.src = ''
-                        }
-                        obj.oldVideo = value
-                    }
-                }
-                obj[prop] = value
-                return true
-            }
-        })
         this.waitForAll().then(() => {
             this.override()
             const config = { attributes: true, childList: true }
             const callback = async () => {
+                try {
+                    if (this.nodes.video.offsetParent === null) {
+                        this.nodes.video.src = ''
+                    }
+                } catch (err) { }
                 await this.waitForAll()
                 this.override()
             }
