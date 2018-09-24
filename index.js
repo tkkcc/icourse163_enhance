@@ -2,65 +2,37 @@
 // @name         icourse163_enhance
 // @match        https://www.icourse163.org/*
 // @author       bilabila
-// @version      0.0.3
+// @version      0.0.4
 // @grant        GM_getValue
 // @grant        GM_setValue
 // @namespace    https://greasyfork.org/users/164996
 // @description  中国大学mooc增强
 // ==/UserScript==
-/* todos
-- fix play multi video in background bug
-* set autoplay delay = 0 
-- wheelEvent on rateBtn
-select all 'A's
-make correct answer from other page
-audio processing, reduce noise, prettify(deeplearnjs)
-video processing
-loading video multithreaing
-tracks
-*/
+
 const settings = {
     currentRate: GM_getValue('rate', 2.5),
     maxRate: 4,
     minRate: 1,
     step: 0.333, //when use click
     wheelStep: 0.1,// when use wheel
-    imwheelDelay: 0,
-    /*for imwheel user
-        x: a wheel event
-        y: another wheel event followed by x triggered by imwheel
-        It's good if y-x < this delay < x'-x, but sometimes y-x > x'-x, 
-        if so, set this delay to 0 is better, just add twice in one wheel event
-    */
 }
 const icourse163 = {
     selectors: {
         videoDiv: 'div.j-unitctBox.unitctBox.f-pr',
         video: 'video',
-        sbg: 'div.sbg',
-        bbg: 'div.bbg',
-        source: 'video > source',
         qualityList: 'div.controlbar_btn.qualitybtn.j-qualitybtn ul',
-        volumnBtn: 'div.controlbar_btn.volumebtn.j-volumebtn',
         rateBtn: 'div.controlbar_btn.ratebtn.j-ratebtn',
         rateBtnDiv: 'div.controlbar_btn.ratebtn.j-ratebtn > div',
         rateTxt: 'span.ratebtn_text.j-ratebtn_text',
-        playBtn: 'div.controlbar_btn.playbtn.j-playbtn',
-        pauseBtn: 'div.controlbar_btn.pausebtn.j-pausebtn',
     },
     nodes: {},
-    //leading edge debounce
-    debounce(func, delay) {
-        let timer = 0
-        return (...args) => {
-            if (Date.now() - timer > delay) func(...args)
-            timer = Date.now()
-        }
-    },
     waitForAll() {
+        const max=20 //10s
+        let times = 0
         return new Promise(resolve => {
             const delay = 500
             const f = () => {
+                if (times++ > max) return
                 Object.entries(this.selectors).forEach(i => this.nodes[i[0]] = document.querySelector(i[1]))
                 if (Object.values(this.nodes).every(v => v != null)) {
                     resolve()
@@ -88,28 +60,19 @@ const icourse163 = {
         this.setRate(rate)
     },
     override() {
-        const { video, rateBtn, rateTxt, qualityList, rateBtnDiv, bbg, sbg, playBtn, pauseBtn } = this.nodes
+        const { rateBtn, rateTxt, qualityList, rateBtnDiv } = this.nodes
         rateBtn.removeChild(rateBtnDiv)
         this.setRate(settings.currentRate)
-        bbg.addEventListener('click', () => {
-            if (sbg.offsetParent !== null)
-                if (video.paused) {
-                    pauseBtn.click()
-                } else {
-                    //failed using video.pause()
-                    playBtn.click()
-                }
-        })
         rateTxt.addEventListener('click', () => {
             this.addRate()
         })
-        const wheelRate = this.debounce(e => {
+        const wheelRate = e => {
             if (e.deltaY < 0)
                 this.addRate({ wheel: true })
             else if (e.deltaY > 0)
                 this.addRate({ wheel: true, reverse: true })
-        }, settings.imwheelDelay)
-        rateBtn.addEventListener("mousewheel", e => {
+        }
+        rateBtn.addEventListener("wheel", e => {
             e.preventDefault()
             wheelRate(e)
         })
@@ -118,25 +81,16 @@ const icourse163 = {
                 this.setRate(settings.currentRate)
             }, 250)
         })
-        video.removeAttribute('autoplay')
-        video.setAttribute('preload', 'auto')
-        video.play()
     },
     init() {
         this.waitForAll().then(() => {
             this.override()
-            const config = { attributes: true, childList: true }
             const callback = async () => {
-                try {
-                    if (this.nodes.video.offsetParent === null) {
-                        this.nodes.video.src = ''
-                    }
-                } catch (err) { }
                 await this.waitForAll()
                 this.override()
             }
             const observer = new MutationObserver(callback)
-            observer.observe(this.nodes.videoDiv, config)
+            observer.observe(this.nodes.videoDiv, { childList: true })
         })
     }
 }
