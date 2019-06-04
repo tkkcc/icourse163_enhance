@@ -1,5 +1,7 @@
 # icourse163增强
 
+**unmaintained**
+
 支持chrome69, 只能调速
 
 - 0.0.4 只能调速
